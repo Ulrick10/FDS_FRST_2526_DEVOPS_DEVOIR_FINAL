@@ -1,0 +1,123 @@
+<div class="row">
+  <div class="col-md-6">
+    <a href="/" class="btn btn-light mb-3">← Back to Dashboard</a>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-6">
+    <h2>Add New Expense</h2>
+    <form id="expenseForm" class="card p-4">
+      <div class="mb-3">
+        <label for="description" class="form-label">Description</label>
+        <input type="text" class="form-control" id="description" placeholder="e.g., Lunch at restaurant" required>
+      </div>
+      <div class="mb-3">
+        <label for="amount" class="form-label">Amount ($)</label>
+        <input type="number" class="form-control" id="amount" placeholder="0.00" step="0.01" required>
+      </div>
+      <div class="mb-3">
+        <label for="category" class="form-label">Category</label>
+        <select class="form-select" id="category" required>
+          <option selected disabled>Select category...</option>
+          <option value="Food">Food</option>
+          <option value="Transport">Transport</option>
+          <option value="Entertainment">Entertainment</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-success w-100">Add Expense</button>
+    </form>
+    <div id="message" class="mt-3"></div>
+  </div>
+
+  <div class="col-md-6">
+    <h2>Your Expenses</h2>
+    <div id="expensesList" class="card">
+      <div class="card-body">
+        <p class="text-muted">Loading expenses...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Load expenses on page load
+  document.addEventListener('DOMContentLoaded', loadExpenses);
+
+  // Form submission
+  document.getElementById('expenseForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const description = document.getElementById('description').value;
+    const amount = parseFloat(document.getElementById('amount').value);
+    const category = document.getElementById('category').value;
+
+    try {
+      const response = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ description, amount, category })
+      });
+
+      if (response.ok) {
+        showMessage('✅ Expense added successfully!', 'success');
+        document.getElementById('expenseForm').reset();
+        loadExpenses();
+      } else {
+        const error = await response.json();
+        showMessage('❌ Error: ' + error.error, 'danger');
+      }
+    } catch (error) {
+      showMessage('❌ Error: ' + error.message, 'danger');
+    }
+  });
+
+  // Load and display expenses
+  async function loadExpenses() {
+    try {
+      const response = await fetch('/api/expenses');
+      const expenses = await response.json();
+
+      if (expenses.length === 0) {
+        document.getElementById('expensesList').innerHTML = `
+          <div class="card-body">
+            <p class="text-muted">No expenses yet. Add one to get started!</p>
+          </div>
+        `;
+        return;
+      }
+
+      const expensesHtml = expenses.map(exp => `
+        <div class="card mb-2">
+          <div class="card-body">
+            <h6 class="card-title">${exp.description}</h6>
+            <p class="mb-1"><strong>Amount:</strong> $${parseFloat(exp.amount).toFixed(2)}</p>
+            <p class="mb-1"><strong>Category:</strong> ${exp.category}</p>
+            <p class="mb-0 text-muted"><small>Date: ${exp.date || new Date().toISOString().split('T')[0]}</small></p>
+          </div>
+        </div>
+      `).join('');
+
+      document.getElementById('expensesList').innerHTML = `
+        <div class="card-body">
+          ${expensesHtml}
+        </div>
+      `;
+    } catch (error) {
+      console.error('Error loading expenses:', error);
+      showMessage('❌ Error loading expenses', 'danger');
+    }
+  }
+
+  // Show message
+  function showMessage(message, type) {
+    const messageDiv = document.getElementById('message');
+    messageDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+    setTimeout(() => {
+      messageDiv.innerHTML = '';
+    }, 3000);
+  }
+</script>

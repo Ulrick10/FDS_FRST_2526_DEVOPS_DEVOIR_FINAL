@@ -1,0 +1,359 @@
+# CI/CD Pipeline — Expense Tracker Node.js
+# Niveau débutant: Modules 3-4 (CI/CD Architecture, GitHub Actions)
+# Votre tâche: Compléter ce fichier workflow en remplaçant les ???
+
+# ============================================================================
+# SECTION 1: DÉCLENCHEURS (TRIGGERS)
+# ============================================================================
+# Quand ce workflow s'exécute-t-il?
+name: ??? # Tâche: Donnez un nom au pipeline (ex: "Expense Tracker CI/CD")
+
+on:
+  # Déclencheur 1: Quand du code est poussé (push)
+  push:
+    branches: [???]  # Tâche: Quelles branches déclencher? Conseil: Incluez main et branches de features
+  
+  # Déclencheur 2: Quand une pull request est créée
+  pull_request:
+    branches: [???]  # Tâche: Quelles branches pour les PR? Conseil: Au minimum la branche principale
+
+# ============================================================================
+# SECTION 2: JOBS (TRAVAUX)
+# ============================================================================
+# Un job = une tâche autonome qui s'exécute sur une machine GitHub Actions
+# Cette pipeline a 3 jobs:
+#   1. test-and-build: Tester le code + construire l'image Docker
+#   2. dockerfile-verify: Vérifier que l'image Docker démarre
+#   3. docker-compose-verify: Vérifier que l'orchestration fonctionne
+#
+# Module 4: Ces jobs exécutent les tâches CI/CD (test automatique, build)
+
+jobs:
+
+  # ========================================================================
+  # JOB 1: test-and-build - Tests + Build Docker
+  # ========================================================================
+  # Objectif: Exécuter les tests Jest et construire l'image Docker
+  # Modules: 3-4 (CI/CD concept et implémentation)
+  test-and-build:
+    # Machine sur laquelle ce job s'exécute
+    # GitHub Actions propose plusieurs runners: ubuntu, windows, macos
+    runs-on: ???  # Tâche: Quel runner choisir? Conseil: Linux est le standard pour CI/CD
+    
+    # Étapes du job (exécutées sequentiellement)
+    steps:
+      
+      # ====================================================================
+      # ÉTAPE 1: Récupérer le code depuis Git
+      # ====================================================================
+      # Module 2: Git — Cloner le repository
+      # Que fait cette action?
+      #   - Clone le repository GitHub
+      #   - Met le code à disposition du job
+      - uses:  ???  # Tâche: Quelle action GitHub pour cloner le code? Conseil: Utilisez la version 4
+      
+      
+      # ====================================================================
+      # ÉTAPE 2: Installer Node.js
+      # ====================================================================
+      # Module 3-4: Automation — Configurer l'environnement
+      # Que fait cette action?
+      #   - Installe Node.js sur le runner
+      #   - Configure npm cache (optimisation de build)
+      #   - npm cache = réutiliser les dépendances téléchargées précédemment
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ???  # Tâche: Quelle version Node.js? Conseil: Vérifiez .node-version ou package.json
+          cache: ???         # Tâche: Quelle dépendance manager cacher? Conseil: npm, yarn, ou pnpm
+      
+      
+      # ====================================================================
+      # ÉTAPE 3: Installer les dépendances
+      # ====================================================================
+      # Comment installer les dépendances?
+      # Deux options: npm install (installe et peut mettre à jour) vs npm ci (installe précisément)
+      # Pour CI/CD: Préférez l'option DÉTERMINISTE (même résultat à chaque build)
+      # Module 3-4: Automatisation cohérente
+      - run: ???  # Tâche: Quelle commande? Conseil: npm ?? (2 lettres après npm)
+      
+      
+      # ====================================================================
+      # ÉTAPE 4: Exécuter les tests
+      # ====================================================================
+      # Comment exécuter les tests?
+      # Regardez package.json → scripts → Quel script lance les tests?
+      # Module 4: Automatiser les tests dans le pipeline
+      # If any test fails → job fails → pipeline RED ❌
+      - run: ???  # Tâche: Quelle commande lance les tests? Conseil: npm [script-name]
+  
+  # ========================================================================
+  # JOB 2: dockerfile-verify - Vérifier que le Dockerfile fonctionne
+  # ========================================================================
+  # Objectif: Construire l'image Docker ET la lancer pour vérifier qu'elle démarre
+  # Modules: 6 (Docker en pratique)
+  dockerfile-verify:
+    # Machine
+    runs-on: ???  # Tâche: Quel runner? Conseil: Même que test-and-build
+    
+    # Ce job dépend du job défini ci-dessus. 
+    # Signification: Ne pas lancer dockerfile-verify tant que test-and-build n'est pas terminé
+    needs: ???  # Tâche: Quelle est la dépendance? Conseil: Le nom du job précédent
+
+    
+    steps:
+      # Récupérer le code
+      - uses: ???  # Tâche: Quelle action pour cloner le code? Conseil: Même que test-and-build
+      
+      
+      # ====================================================================
+      # ÉTAPE 1: Construire l'image Docker
+      # ====================================================================
+      # Même étape que dans test-and-build
+      # -t [nom:version] = Nommer et versionner l'image
+      # . = Utiliser le répertoire courant comme contexte de build
+      - name: Build Docker image
+        run: ??? # Tâche: Quelle commande pour construire l'image? 
+         
+      
+      
+      # ====================================================================
+      # ÉTAPE 2: Lancer le conteneur
+      # ====================================================================
+      # Quand utilise-t-on docker run?
+      # Après avoir construit une image, on crée un conteneur à partir de celle-ci
+      # Flags communes:
+      #   --rm = Supprimer automatiquement après arrêt
+      #   -d = Détaché (run en arrière-plan)
+      #   -p PORT_EXTERNE:PORT_INTERNE = Mapper un port
+      #   --name = Identifier le conteneur
+      # Module 6: Docker — Exécuter des conteneurs
+      - name: Start Docker container
+        run: ??? # Tâche: Quelle commande pour lancer le conteneur? 
+      
+      
+      # ====================================================================
+      # ÉTAPE 3: Attendre que l'app soit prête
+      # ====================================================================
+      # Pourquoi attendre? Le conteneur démarre mais le serveur Node.js prend du temps
+      # (Au lieu de tester immédiatement et d'échouer car pas prêt)
+      - name: Wait for application startup
+        run: sleep 3
+      
+      
+      # ====================================================================
+      # ÉTAPE 4: Vérifier que l'application répond
+      # ====================================================================
+      # curl = Faire une requête HTTP
+      # Syntax: curl [URL]
+      # -f = Fail on HTTP errors
+      # Module 6: Docker — Tester qu'un conteneur fonctionne
+      # Conseil: Quel endpoint sa-vous confirmer que l'app est vivante? 
+      #          Regardez src/server.js pour les routes disponibles
+      - name: Verify application is responding
+        run: ??? -f http://localhost:???/??? || exit 1
+          # Tâche: Complétez la commande curl avec le port approprié
+          # Tâche: Complétez l'URL avec l'endpoint approprié
+      
+      
+      # ====================================================================
+      # ÉTAPE 5: Arrêter le conteneur
+      # ====================================================================
+      # docker stop = Arrêter un conteneur en cours d'exécution
+      # Nettoyage: libérer le port 3000 pour les prochains tests
+      - name: Stop Docker container
+        run: ??? # Tâche: Quelle commande pour arrêter le conteneur? Conseil: docker stop [nom_conteneur]
+    
+  
+  # ========================================================================
+  # JOB 3: docker-compose-verify - Vérifier l'orchestration complète
+  # ========================================================================
+  # Objectif: Tester que docker-compose démarre web + PostgreSQL + communication
+  # Modules: 7 (Docker Compose multi-conteneurs)
+  docker-compose-verify:
+    # Machine
+    runs-on: ???  # Tâche: Quel runner? Conseil: Cohérent avec les autres jobs
+    
+    # Ce job attend les deux précédents
+    # Dépendances: Ce job démarre après 1 ET 2
+    needs: ???  # Tâche: Quelles sont les dépendances? Conseil: Les noms des deux jobs précédents
+    
+    
+    # ====================================================================
+    # VARIABLES D'ENVIRONNEMENT (Injectées dans le job)
+    # ====================================================================
+    # Ces variables deviennent disponibles pour docker-compose
+    # Module 7: Docker Compose — Configuration via variables
+    # Conseil: Trouvez les valeurs dans docker-compose.yml ou votre configuration
+    env:
+      DB_HOST: ???          # Tâche: Service name dans docker-compose? Conseil: Pas 'localhost'
+      DB_PORT: ???          # Tâche: Port PostgreSQL? Conseil: Standard database port
+      DB_NAME: ${{ secrets.??? }}        # Variable secrète depuis GitHub
+      DB_USER: ${{ secrets.??? }}        # Variable secrète depuis GitHub
+      DB_PASSWORD: ${{ secrets.??? }}  # Variable secrète depuis GitHub
+      NODE_ENV: production
+    
+    steps:
+      # Récupérer le code
+      - uses: ??? # Tâche: Quelle action pour cloner le code? Conseil: Même que les autres jobs
+      
+      
+      # ====================================================================
+      # ÉTAPE 1: Vérifier que les secrets GitHub sont configurés
+      # ====================================================================
+      # Pourquoi?
+      #   - docker-compose a besoin des secrets pour créer les services
+      #   - Si les secrets manquent → job échoue avec message clair
+      # Module 4: CI/CD — Gestion des secrets et configuration
+      - name: 🔍 Verify GitHub Secrets are configured
+        env:
+          DB_PASSWORD_CHECK: ${{ secrets.??? }}
+          DB_USER_CHECK: ${{ secrets.??? }}
+          DB_NAME_CHECK: ${{ secrets.??? }}
+        run: |
+          echo "========================================="
+          echo "🔍 Checking GitHub Secrets Configuration"
+          echo "========================================="
+          
+          SECRETS_OK=true
+          
+          if [ -z "${{ env.DB_PASSWORD_CHECK }}" ]; then
+            echo "❌ ERROR: Secret 'DB_PASSWORD' is NOT defined!"
+            SECRETS_OK=false
+          else
+            echo "✅ Secret 'DB_PASSWORD' is defined"
+          fi
+          
+          if [ -z "${{ env.DB_USER_CHECK }}" ]; then
+            echo "❌ ERROR: Secret 'DB_USER' is NOT defined!"
+            SECRETS_OK=false
+          else
+            echo "✅ Secret 'DB_USER' is defined"
+          fi
+          
+          if [ -z "${{ env.DB_NAME_CHECK }}" ]; then
+            echo "❌ ERROR: Secret 'DB_NAME' is NOT defined!"
+            SECRETS_OK=false
+          else
+            echo "✅ Secret 'DB_NAME' is defined"
+          fi
+          
+          if [ "$SECRETS_OK" = false ]; then
+            echo ""
+            echo "════════════════════════════════════════"
+            echo "📚 HOW TO FIX THIS ERROR:"
+            echo "════════════════════════════════════════"
+            echo "1. Go to your repository on GitHub"
+            echo "2. Settings → Secrets and variables → Actions"
+            echo "3. Click 'New repository secret'"
+            echo "4. Add these secrets:"
+            echo "   - DB_PASSWORD: (PostgreSQL password)"
+            echo "   - DB_USER: (PostgreSQL user, e.g., postgres)"
+            echo "   - DB_NAME: (Database name, e.g., expense_tracker)"
+            echo ""
+            echo "📖 For detailed instructions, see:"
+            echo "   docs/GITHUB_SECRETS_SETUP.md"
+            echo "════════════════════════════════════════"
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ All required secrets are configured!"
+          echo "✅ docker compose can now start safely"
+      
+      
+      # ====================================================================
+      # ÉTAPE 2: Lancer les services avec docker-compose
+      # ====================================================================
+      # Quand a-t-on besoin de docker-compose?
+      # Quand une application a plusieurs services (web + database, etc.)
+      # Sintax: docker compose [commande] [flags]
+      # Flags disponibles: up, down, logs, ps
+      # Module 7: Docker Compose — Orchestrer multi-conteneurs
+      - name: Start services with docker compose
+        run: ???  # Tâche: Quelle commande + flags? Conseil: Démarrer en arrière-plan
+      
+      
+      # ====================================================================
+      # ÉTAPE 3: Attendre que les services soient prêts
+      # ====================================================================
+      # Pourquoi attendre plus longtemps que dockerfile-verify?
+      # PostgreSQL démarre plus lentement que Node.js seul
+      - name: Wait for services to start
+        run: sleep 5
+      
+      
+      # ====================================================================
+      # ÉTAPE 4: Vérifier que l'application répond
+      # ====================================================================
+      # Même test que dockerfile-verify mais À TRAVERS docker-compose
+      # L'app communique maintenant avec PostgreSQL (plus réaliste)
+      # Module 7: Tester l'orchestration
+      - name: Verify web application is responding
+        run: ??? -f http://localhost:3000/??? || exit 1
+          # Tâche : Quelle commande? 
+          # Tâche: Quel endpoint? Conseil: Même que dockerfile-verify
+      
+      
+      # ====================================================================
+      # ÉTAPE 5: Vérifier la connexion à la base de données
+      # ====================================================================
+      # Vérifie que l'application communique avec PostgreSQL
+      # Si la connexion échoue, l'app ne répondrait pas correctement
+      # Module 7: Communication inter-services Docker
+      - name: Check database connection
+        run: ??? -f http://localhost:3000/??? | grep -q "connected" || echo "Database initialized successfully"
+       # Tâche: Quelle commande? Conseil: Même que l'étape précédente mais vérifiez la réponse pour confirmer la connexion à la DB
+      
+      # ====================================================================
+      # ÉTAPE 6: Arrêter les services
+      # ====================================================================
+      # Arrêter TOUS les services du fichier compose
+      # Nettoyage: éviter de laisser des processus/ports actifs
+      # Module 7: Gestion du cycle de vie docker-compose
+      - name: Stop all services
+        run: ??? # Tâche: Quelle commande pour arrêter tous les services? 
+
+
+
+# ============================================================================
+# NOTES PÉDAGOGIQUES (Modules 3-7)
+# ============================================================================
+#
+# ✅ À COMPRENDRE:
+#   - Workflow GitHub Actions = Pipeline CI/CD décrit en YAML
+#   - Jobs = Tâches autonomes qui peuvent s'exécuter en parallèle
+#   - Steps = Actions dans un job (exécutées séquentiellement)
+#   - needs: = Dépendances entre jobs (ordre d'exécution)
+#   - Secrets = Variables confidentielles (passwords, API keys)
+#   - env: = Variables d'environnement accessible dans le job
+#
+# ✅ FLUX DE CE PIPELINE:
+#   1. test-and-build:
+#      - Clone code (Git)
+#      - Installe Node.js
+#      - npm ci (installe dépendances)
+#      - npm test (Lance Jest)
+#   
+#   2. dockerfile-verify (attend 1):
+#      - docker build (même image)
+#      - docker run (démarre le conteneur seul)
+#      - curl (vérifie que l'app répond)
+#   
+#   3. docker-compose-verify (attend 1 + 2):
+#      - docker compose up (démarre web + PostgreSQL)
+#      - curl (vérifie web à travers compose)
+#      - Vérifie database connection
+#
+
+# ✅ SECRETS GITHUB:
+#   - Jamais stockés en dur dans le code
+#   - Définis dans Settings → Secrets
+#   - Accessibles via ${{ secrets.NOM_SECRET }}
+#   - Module 8: Sécurité du pipeline
+#
+# ❌ À ÉVITER (pas au niveau débutant):
+#   - Matrix builds (tester plusieurs versions)
+#   - Artifacts et caching avancés
+#   - Workflows complexes avec conditions
+#   - Services (services: ) — trop avancé, docker-compose suffit
+# ============================================================================

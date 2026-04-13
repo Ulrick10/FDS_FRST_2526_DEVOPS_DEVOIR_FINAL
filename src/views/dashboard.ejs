@@ -1,0 +1,65 @@
+<h2>Dashboard</h2>
+
+<div class="row mt-4">
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title">Total Expenses</h5>
+        <p class="card-text fs-3"><%= stats.total_expenses || 0 %></p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title">Total Amount</h5>
+        <p class="card-text fs-3">$<%= parseFloat(stats.total_amount || 0).toFixed(2) %></p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title">Average Amount</h5>
+        <p class="card-text fs-3">$<%= parseFloat(stats.avg_amount || 0).toFixed(2) %></p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h5 class="card-title">Categories</h5>
+        <p class="card-text fs-3"><%= categories.length %></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-5">
+  <div class="col-md-6">
+    <h4>Expenses by Category</h4>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Count</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% categories.forEach(cat => { %>
+          <tr>
+            <td><%= cat.category %></td>
+            <td><%= cat.count %></td>
+            <td>$<%= parseFloat(cat.total).toFixed(2) %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+  <div class="col-md-6 d-flex align-items-center justify-content-center">
+    <a href="/expenses" class="btn btn-primary btn-lg">
+      ➜ Manage Expenses
+    </a>
+  </div>
+</div>

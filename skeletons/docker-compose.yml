@@ -1,0 +1,395 @@
+# docker-compose.yml Skeleton — Expense Tracker
+# Niveau débutant: Module 7 (Docker Compose - orchestration multi-conteneurs)
+# 📚 Note pédagogique: Ce fichier étudiant montre une composition Docker
+#    complète avec gestion d'environnement flexible pour local + CI/CD
+#
+# 🎯 OBJECTIF: Comprendre comment une seule composition Docker fonctionne
+#    dans DEUX contextes différents:
+#    - Local: Charges .env.docker (si créé par l'étudiant)
+#    - CI/CD: Charge les variables d'environnement du runner GitHub
+#
+#
+# ============================================================================
+
+version: '3.8'
+
+# ============================================================================
+# SECTION 1: SERVICES
+# ============================================================================
+# Un service = un conteneur dans la composition
+# Cette application a 2 services: web (Node.js) et db (PostgreSQL)
+
+services:
+
+  # ====================================================================
+  # SERVICE 1: Application Web (Node.js)
+  # ====================================================================
+  web:
+    # Construire l'image à partir du Dockerfile
+    build:
+      context: .              # Dossier parent (où se trouve le Dockerfile)
+      dockerfile: ???         # Tâche: Quel est le chemin du Dockerfile?
+
+    # Nom du conteneur (pour faciliter les tests/debug)
+    # Conseil: Utilisez votre nom pour personnaliser
+    container_name: ???        # Tâche: expense-tracker-nodejs ou expense-tracker-[votre nom sans esoace ou vos initiales]
+
+    # Charger les variables d'environnement depuis .env.docker
+    # En local: Docker Compose charge depuis .env.docker
+    # En CI/CD: Le fichier n'existe pas (dans .gitignore)
+    #          Les variables viennent du runner (GitHub Secrets via env:)
+    # Si votre github actions workflow echoue en ligne vous pouvez commenter ce bloc de codes si necessaire.
+    env_file:
+      - .env.docker
+
+    # Mappage des ports
+    # Format: "port_externe:port_interne"
+    ports:
+      - "???:???"              # Tâche: Mapper les ports
+
+    # Variables d'environnement (configuration du conteneur)
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      
+      # DATABASE_URL: Chaîne de connexion PostgreSQL
+      # Important: L'hôte DOIT être le nom du service (pas localhost)
+      DATABASE_URL: ???        # Tâche: Construire connexion PostgreSQL
+      
+      # Variables individuelles
+      DB_HOST: ???             # Tâche: Nom du service?
+      DB_PORT: ???             # Tâche: Port?
+      DB_NAME: ???             # Tâche: Nom base?
+      DB_USER: ???             # Tâche: Utilisateur?
+      DB_PASSWORD: ???         # Tâche: Mot de passe?
+
+    # Attendre que PostgreSQL soit prêt
+    depends_on:
+      db:
+        condition: service_healthy
+
+    # Redémarrage automatique si le conteneur crash
+    restart: unless-stopped
+
+    # Réseau personnalisé (pour que les services se trouvent)
+    networks:
+      - ???                     # Tâche: Nom du réseau?
+
+
+  # ====================================================================
+  # SERVICE 2: Base de données PostgreSQL
+  # ====================================================================
+  db:
+    # Image Docker officielle PostgreSQL
+    image: ???                 # Tâche: Quelle variante PostgreSQL utiliser?
+                               # Conseil: Cherchez sur hub.docker.com
+
+    # Nom du conteneur
+    container_name: ???        # Tâche: Nommez le conteneur PostgreSQL
+
+    # Configuration PostgreSQL
+    environment:
+      # Mot de passe du superutilisateur
+      # Cette même valeur doit être utilisée dans DATABASE_URL
+      POSTGRES_PASSWORD: ???   # Tâche: Mot de passe?
+      
+      # Nom de la base de données à créer
+      POSTGRES_DB: ???         # Tâche: Nom base données?
+      
+      # Utilisateur PostgreSQL par défaut
+      POSTGRES_USER: ???       # Tâche: Utilisateur PostgreSQL?
+
+    # Volumes: Persistence des données
+    # Un volume = stockage durable même si conteneur arrêté
+    # Format: "nom_volume:chemin_dans_conteneur"
+    volumes:
+      - ???:/var/lib/postgresql/data  # Tâche: Nom volume?
+
+    # Health check: Vérifie si PostgreSQL est prêt
+    # Permet au service web de savoir quand se connecter
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    # Redémarrage automatique
+    restart: unless-stopped
+
+    # Réseau personnalisé
+    networks:
+      - ???                     # Tâche: Même réseau que service web
+
+
+# ============================================================================
+# SECTION 2: VOLUMES
+# ============================================================================
+# Volumes nommés: Stockage persistant pour les données de la base de données
+
+volumes:
+  ???:                         # Tâche: Définir volume (nom utilisé plus haut)?
+    driver: local
+
+
+# ============================================================================
+# SECTION 3: NETWORKS
+# ============================================================================
+# Réseau personnalisé: Permet aux services de se communiquer par leurs noms
+
+networks:
+  ???:                         # Tâche: Nom du réseau (utilisé dans les services)?
+    driver: bridge
+
+
+# ============================================================================
+# NOTES PÉDAGOGIQUES (Module 7: Docker Compose + Module 9: Gestion d'environnement)
+# ============================================================================
+#
+# 🎯 OBJECTIF PÉDAGOGIQUE: Comprendre les variables d'environnement et leur résolution
+#
+# ============================================================================
+# PARTIE 1: Les variables d'environnement (${VAR:-default})
+# ============================================================================
+#
+# Pourquoi utiliser des variables?
+#   ✅ FLEXIBILITÉ: Même app, configurations différentes (local, test, prod, CI/CD)
+#   ✅ SÉCURITÉ: Pas de secrets dans le code (pas de mots de passe en dur!)
+#   ✅ MAINTENABILITÉ: Changer la config sans toucher au code
+#
+# Syntaxe: ${VAR:-default}
+#   - ${DB_PASSWORD}           = Charger depuis l'environnement
+#   - ${DB_PASSWORD:-password} = Charger, sinon utiliser "password" par défaut
+#
+# Exemple d'utilisation dans ce fichier:
+#   DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/${DB_NAME:-expense_tracker}
+#   ↑ Charge DB_USER depuis l'environnement, sinon "postgres"
+#   ↑ Charge DB_PASSWORD depuis l'environnement, sinon "password"
+#   ↑ etc.
+#
+# ============================================================================
+# PARTIE 2: D'où viennent les variables? (Ordre de résolution)
+# ============================================================================
+#
+# SCÉNARIO 1: Développement local (docker-compose up)
+#   1️⃣ Docker Compose lit ce fichier
+#   2️⃣ Voir la ligne: env_file: .env.docker
+#   3️⃣ Charge les variables depuis .env.docker
+#   4️⃣ Si la variable n'existe pas dans .env.docker → utilise la valeur défaut (:-default)
+#
+#   Exemple .env.docker:
+#   ```
+#   DB_USER=postgres
+#   DB_PASSWORD=fb123
+#   DB_NAME=expense_tracker
+#   DB_HOST=db
+#   DB_PORT=5432
+#   NODE_ENV=development
+#   ```
+#
+# SCÉNARIO 2: CI/CD (GitHub Actions)
+#   1️⃣ GitHub Actions prend les Secrets et Variables du repository
+#   2️⃣ Les ajoute comme variables d'environnement du runner (env: section)
+#   3️⃣ Le fichier .env.docker n'existe PAS (dans .gitignore)
+#   4️⃣ Docker Compose cherche .env.docker → ne trouve rien
+#   5️⃣ Charge les variables depuis l'environnement du runner
+#   6️⃣ Si la variable n'existe pas → utilise la valeur défaut (:-default)
+#   7️⃣ ✅ Services démarrent avec les GitHub Secrets
+#
+# ============================================================================
+# PARTIE 3: Comment tester localement (IMPORTANT!)
+# ============================================================================
+#
+# ÉTAPE 1: Créer le fichier .env.docker (OPTIONNEL, mais recommandé pour tester localement)
+#   Créez à la racine du projet un fichier nommé ".env.docker"
+#   Contenu à copier:
+#   ```
+#   DB_HOST=db
+#   DB_PORT=5432
+#   DB_NAME=expense_tracker
+#   DB_USER=postgres
+#   DB_PASSWORD=fb123
+#   NODE_ENV=production
+#   ```
+#
+#   ⚠️ SÉCURITÉ: .env.docker doit être dans .gitignore!
+#               Jamais ne commitez des vrais mots de passe!
+#               Les secrets vont dans GitHub → Secrets du repository
+#
+#   💡 POURQUOI OPTIONNEL?
+#      - Si vous crée .env.docker: Docker Compose charge depuis ce fichier
+#      - Si vous l'omettez: Docker Compose cherche .env.docker? → ne trouve rien
+#                          continue sans erreur (utilise defaults + env vars)
+#      - En CI/CD: Le fichier ne peut JAMAIS exister (secrets protégés)
+#
+# ÉTAPE 2: Valider le fichier yaml
+#   docker compose config
+#   ↑ Affiche le résultat final après interpolation des variables
+#
+# ÉTAPE 3: Lancer les services
+#   docker compose up -d
+#   ↑ Lance Services en background
+#   ↑ Docker Compose charge les variables depuis .env.docker
+#
+# ÉTAPE 4: Vérifier les logs
+#   docker compose logs web
+#   docker compose logs db
+#   ↑ Vérifiez que DB_PASSWORD, DB_NAME, etc. sont bien remplacées
+#
+# ============================================================================
+# PARTIE 4: Stratégie variable vs défaut
+# ============================================================================
+#
+# 🟢 Utiliser un DÉFAUT (${VAR:-default}):
+#   - Pour des configurations NON-CRITIQUES
+#   - Exemples: port, hostname (non-sensibles)
+#   - Bénéfice: Plus permissif, idéal pour l'apprentissage
+#
+# 🔴 SANS défaut (${VAR}):
+#   - Pour des informations CRITIQUES
+#   - Exemples: mot de passe, clés secrètes
+#   - Bénéfice: Forcer l'étudiant à les définir explicitement
+#   - Conséquence: docker compose up ÉCHOUE si variable manquante ✅ C'est bon!
+#
+# DANS CE FICHIER:
+#   - Variables non-critiques: DB_HOST, DB_PORT → avec défaut
+#   - Variables critiques: DB_PASSWORD, DB_NAME → (à VOUS de choisir la stratégie)
+#
+# ============================================================================
+# PARTIE 5: Comparaison Local vs CI/CD
+# ============================================================================
+#
+# ┌─────────────────────────────────────────────────────────────────┐
+# │                    LOCAL DEVELOPMENT                            │
+# ├─────────────────────────────────────────────────────────────────┤
+# │ variable source : .env.docker (optionnel avec ?)                │
+# │ commande       : docker compose up                              │
+# │ résolution     : ${VAR} → cherche dans .env.docker + défaut     │
+# │ sécurité       : ⚠️ Fichier en local (risque si commité)       │
+# │ avantage       : Facile de tester avec différentes valeurs      │
+# │ note           : Si .env.docker existe → l'utilise              │
+# │                  Si .env.docker absent → utilise le défaut      │
+# └─────────────────────────────────────────────────────────────────┘
+#
+# ┌─────────────────────────────────────────────────────────────────┐
+# │                    CI/CD (GITHUB ACTIONS)                       │
+# ├─────────────────────────────────────────────────────────────────┤
+# │ variable source : GitHub Secrets + Variables (env: section)     │
+# │ commande        : docker compose up (même fichier!)             │
+# │ résolution      : .env.docker → pas trouvé (c'est bon!)         │
+# │                  ${VAR} → env vars du runner + défaut            │
+# │ sécurité        : ✅ .env.docker n'existe jamais (gitignore)   │
+# │                  ✅ Secrets JAMAIS exposés en plaintext         │
+# │ avantage        : Même code, configurations sécurisées          │
+# │ note            : GitHub Secrets injectés via env: du job       │
+# └─────────────────────────────────────────────────────────────────┘
+#
+# ============================================================================
+# PARTIE 6: Stratégie .env.docker - Local vs CI/CD
+# ============================================================================
+#
+# En DÉVELOPPEMENT LOCAL:
+#   VOUS créez le fichier .env.docker avec vos credentials
+#   ✅ env_file: .env.docker → Docker Compose le charge
+#   ✅ Services démarrent avec vos variables locales
+#   ⚠️ IMPORTANT: Ce fichier [NE DOIT PAS] être commité (dans .gitignore)
+#
+# En CI/CD (GitHub Actions):
+#   .env.docker n'existe JAMAIS (elle est dans .gitignore)
+#   ✅ Les variables viennent de GitHub Secrets
+#   ✅ Dans .github/workflows/ci-cd.yml, section "env:" injecte les secrets
+#   ✅ Docker Compose les reçoit comme variables d'environnement du runner
+#   ✅ Services démarrent avec les GitHub Secrets (sécurisé)
+#
+#   Exemple workflow (ci-cd.yml):
+#   ```yaml
+#   docker-compose-verify:
+#     env:
+#       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+#       DB_USER: ${{ secrets.DB_USER }}
+#       DB_NAME: ${{ secrets.DB_NAME }}
+#     steps:
+#       - run: docker compose up -d
+#   ```
+#
+# RÉSUMÉ:
+#   - Local: .env.docker (créé) + env_file: .env.docker
+#   - CI/CD: GitHub Secrets + env: section du workflow
+#   - Même docker-compose.yml, variables différentes!
+#   - .env.docker JAMAIS commité (dans .gitignore)
+#
+# ============================================================================
+# PARTIE 7: Checklist étudiant
+# ============================================================================
+#
+# ☐ Créer .env.docker à la racine du projet? 
+# ☐ Remplir DB_USER, DB_PASSWORD, DB_NAME avec vos valeurs?
+# ☐ Compléter les ??? dans ce fichier docker-compose.yml?
+# ☐ Valider avec: docker compose config
+# ☐ Lancer avec: docker compose up -d
+# ☐ Vérifier: docker compose logs web
+# ☐ Tester l'app: curl http://localhost:3000/health
+# ☐ Arrêter: docker compose down
+#
+# ✅ À COMPRENDRE:
+#   - version: '3.8' = Version de la syntaxe Docker Compose
+#   - services: = Liste de conteneurs à orchestrer
+#   - build: = Construire une image à partir d'un Dockerfile
+#   - image: = Utiliser une image existante (hub.docker.com)
+#   - environment: = Variables d'environnement (config du conteneur)
+#   - env_file: = Charger les variables depuis un fichier
+#   - ports: = Mapper les ports (qui vient de l'extérieur)
+#   - volumes: = Stocker les données durablement
+#   - networks: = Communication entre services
+#   - depends_on: = Assurer l'ordre de démarrage
+#   - healthcheck: = Vérifier si le service est prêt
+#
+# ✅ IMPORTANT: Service Discovery dans Docker Compose
+#   - Dans le conteneur 'web', accédez à PostgreSQL via le nom 'db'
+#   - PAS localhost:5432
+#   - Oui: postgresql://postgres:password@db:5432/expense_tracker
+#   - Non: postgresql://postgres:password@localhost:5432/expense_tracker
+#
+# ✅ POURQUOI Volumes?
+#   - Sans volume: Arrêtez le conteneur db → Les données disparaissent
+#   - Avec volume: Arrêtez le conteneur db → Les données restent sur le disque
+#   - Redémarrez le conteneur → Les données reviennent
+#
+# ✅ COMMANDES (une fois le fichier complété):
+#   docker compose config              = Valider YAML et voir les variables interpolées
+#   docker compose up -d               = Lancer tous les services en background
+#   docker compose down                = Arrêter tous les services
+#   docker compose logs web            = Voir les logs du service 'web'
+#   docker compose logs db             = Voir les logs du service 'db'
+#   docker compose ps                  = Lister les services actifs
+#   docker compose exec web curl ...   = Exécuter une commande dans le conteneur 'web'
+#
+# ❌ À ÉVITER (pas au niveau débutant):
+#   - Nested Docker Compose (composition de compositions)
+#   - Service networking avancé (overlays, plugins)
+#   - CPU/Memory limits (gestion avancée de ressources)
+#   - Docker Swarm (orchestration cluster - cours avancés)
+# ============================================================================
+# PHASE 2: Une fois que ça marche
+# ============================================================================
+# 5. Valider: docker compose config
+# 6. Démarrer: docker compose up -d
+# 7. Vérifier: docker compose ps
+# 8. Test connexion: docker compose exec web curl http://db:5432
+# 9. Voir les logs: docker compose logs -f web
+# 10. Tester l'API: curl http://localhost:3000/health
+# ============================================
+
+# ============================================
+# COMMON MISTAKES TO AVOID:
+# ============================================
+# ❌ Using localhost or 127.0.0.1 for database (use service name 'db')
+# ❌ Forgetting to define db_data volume
+# ❌ Not setting depends_on with service_healthy
+# ❌ Wrong port mappings
+# ❌ Hardcoding passwords (use environment variables)
+# ❌ YAML indentation errors (consistent spaces/tabs)
+# ❌ Forgetting to create .env.docker file for local testing
+# ❌ Confusing ${VAR:-default} with hardcoded values
+# ❌ Committing .env.docker to git (USE .gitignore!)
+# ❌ Forgetting to set GitHub Secrets for CI/CD
+# ❌ Using .env.docker credentials in CI/CD (use env: section instead)
+# ============================================

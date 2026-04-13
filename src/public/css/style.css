@@ -1,0 +1,178 @@
+/**
+ * Styles for Expense Tracker
+ * Bootstrap overrides and custom styles
+ */
+
+:root {
+  --primary-color: #007bff;
+  --success-color: #28a745;
+  --danger-color: #dc3545;
+}
+
+body {
+  background-color: #f8f9fa;
+}
+
+.navbar {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card {
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.btn {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+table {
+  background-color: white;
+}
+
+.badge {
+  font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+}
+
+h2 {
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+/* Database Alert Styles */
+.alert-database {
+  background: linear-gradient(135deg, #fff3cd 0%, #fffbf0 100%);
+  border: 2px solid #ffc107;
+  border-radius: 8px;
+  padding: 2rem;
+  margin: 2rem 0;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.alert-database h2 {
+  color: #856404;
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.alert-icon {
+  font-size: 2rem;
+}
+
+.alert-message {
+  color: #856404;
+  font-size: 1.1rem;
+  margin: 1rem 0;
+}
+
+.alert-troubleshooting {
+  background: rgba(255,255,255,0.7);
+  border-left: 4px solid #ffc107;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 4px;
+}
+
+.alert-troubleshooting h3 {
+  color: #333;
+  font-size: 1rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.alert-troubleshooting ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.alert-troubleshooting li {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.alert-troubleshooting li:before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #ffc107;
+  font-weight: bold;
+}
+
+.alert-troubleshooting code {
+  background: #f5f5f5;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  color: #d32f2f;
+}
+
+.alert-troubleshooting pre {
+  background: #2d2d2d;
+  color: #f8f8f2;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.alert-troubleshooting code {
+  color: #f8f8f2;
+}
+
+.alert-link {
+  color: #ff6b00;
+  text-decoration: none;
+  font-weight: 500;
+  border-bottom: 1px dotted #ff6b00;
+}
+
+.alert-link:hover {
+  color: #d32f2f;
+  border-bottom-color: #d32f2f;
+}
+
+.alert-info {
+  background: rgba(13,110,253,0.1);
+  border-left: 4px solid #0d6efd;
+  padding: 1rem;
+  margin-top: 1.5rem;
+  border-radius: 4px;
+}
+
+.alert-info p {
+  color: #004085;
+  margin: 0.5rem 0;
+}
+
+.alert-info .small {
+  font-size: 0.85rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+  font-size: 1.1rem;
+}

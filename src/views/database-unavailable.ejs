@@ -1,0 +1,45 @@
+<div class="alert alert-warning alert-database" role="alert">
+  <div class="alert-icon">
+    🔗
+  </div>
+  <div class="alert-content">
+    <h2>Base de données indisponible</h2>
+    <p class="alert-message">
+      La connexion à la base de données n'est pas disponible. L'application fonctionne en mode dégradé.
+    </p>
+    
+    <div class="alert-troubleshooting">
+      <h3>Comment résoudre ce problème?</h3>
+      <ul>
+        <li>
+          <strong>Mode Docker Compose (recommandé):</strong>
+          <pre><code>docker-compose up</code></pre>
+        </li>
+        <li>
+          <strong>Mode PostgreSQL Local:</strong>
+          Vérifiez que PostgreSQL est en cours d'exécution sur <code>localhost:5432</code>
+        </li>
+        <li>
+          <strong>Vérifier l'état:</strong>
+          <a href="/health" class="alert-link">Vérifier la santé de l'application (/health)</a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="alert-info">
+      <p class="small">
+        <strong>Pour les développeurs:</strong> 
+        Si le problème persiste, veuillez vérifier les logs du conteneur ou contacter votre SRE.
+      </p>
+      <p class="small">
+        Les variables d'environnement: 
+        <code>DB_HOST=<%= process.env.DB_HOST || 'non défini' %></code>, 
+        <code>DB_PORT=<%= process.env.DB_PORT || 'non défini' %></code>
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="empty-state">
+  <p>Réessayez une fois que la base de données sera disponible.</p>
+</div>
