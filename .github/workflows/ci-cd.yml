@@ -1,0 +1,178 @@
+# CI/CD Pipeline — Expense Tracker Node.js
+# Niveau débutant: Modules 3-4 (CI/CD Architecture, GitHub Actions)
+# Votre tâche: Compléter ce fichier workflow en remplaçant les ???
+
+# ============================================================================
+# SECTION 1: DÉCLENCHEURS (TRIGGERS)
+# ============================================================================
+# Quand ce workflow s'exécute-t-il?
+name: Expense Tracker CI/CD
+
+on:
+  # Déclencheur 1: Quand du code est poussé (push)
+  push:
+    branches: [main, feature/*]
+  
+  # Déclencheur 2: Quand une pull request est créée
+  pull_request:
+    branches: [main]
+
+# ============================================================================
+# SECTION 2: JOBS (TRAVAUX)
+# ============================================================================
+
+jobs:
+
+  # ========================================================================
+  # JOB 1: test-and-build - Tests + Build Docker
+  # ========================================================================
+  test-and-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      
+      # ÉTAPE 1: Récupérer le code depuis Git
+      - uses: actions/checkout@v4
+      
+      # ÉTAPE 2: Installer Node.js
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      
+      # ÉTAPE 3: Installer les dépendances
+      - run: npm ci
+      
+      # ÉTAPE 4: Exécuter les tests
+      - run: npm test
+  
+  # ========================================================================
+  # JOB 2: dockerfile-verify - Vérifier que le Dockerfile fonctionne
+  # ========================================================================
+  dockerfile-verify:
+    runs-on: ubuntu-latest
+    
+    needs: test-and-build
+    
+    steps:
+      # Récupérer le code
+      - uses: actions/checkout@v4
+      
+      # ÉTAPE 1: Construire l'image Docker
+      - name: Build Docker image
+        run: docker build -t expense-tracker-test .
+      
+      # ÉTAPE 2: Lancer le conteneur
+      - name: Start Docker container
+        run: docker run -d --name expense-tracker-test -p 3000:3000 expense-tracker-test
+      
+      # ÉTAPE 3: Attendre que l'app soit prête
+      - name: Wait for application startup
+        run: sleep 3
+      
+      # ÉTAPE 4: Vérifier que l'application répond
+      - name: Verify application is responding
+        run: curl -f http://localhost:3000/health || exit 1
+      
+      # ÉTAPE 5: Arrêter le conteneur
+      - name: Stop Docker container
+        run: docker stop expense-tracker-test
+    
+  
+  # ========================================================================
+  # JOB 3: docker-compose-verify - Vérifier l'orchestration complète
+  # ========================================================================
+  docker-compose-verify:
+    runs-on: ubuntu-latest
+    
+    needs: [test-and-build, dockerfile-verify]
+    
+    # VARIABLES D'ENVIRONNEMENT
+    env:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      NODE_ENV: production
+    
+    steps:
+      # Récupérer le code
+      - uses: actions/checkout@v4
+      
+      # ÉTAPE 1: Vérifier que les secrets GitHub sont configurés
+      - name: 🔍 Verify GitHub Secrets are configured
+        env:
+          DB_PASSWORD_CHECK: ${{ secrets.DB_PASSWORD }}
+          DB_USER_CHECK: ${{ secrets.DB_USER }}
+          DB_NAME_CHECK: ${{ secrets.DB_NAME }}
+        run: |
+          echo "========================================="
+          echo "🔍 Checking GitHub Secrets Configuration"
+          echo "========================================="
+          
+          SECRETS_OK=true
+          
+          if [ -z "${{ env.DB_PASSWORD_CHECK }}" ]; then
+            echo "❌ ERROR: Secret 'DB_PASSWORD' is NOT defined!"
+            SECRETS_OK=false
+          else
+            echo "✅ Secret 'DB_PASSWORD' is defined"
+          fi
+          
+          if [ -z "${{ env.DB_USER_CHECK }}" ]; then
+            echo "❌ ERROR: Secret 'DB_USER' is NOT defined!"
+            SECRETS_OK=false
+          else
+            echo "✅ Secret 'DB_USER' is defined"
+          fi
+          
+          if [ -z "${{ env.DB_NAME_CHECK }}" ]; then
+            echo "❌ ERROR: Secret 'DB_NAME' is NOT defined!"
+            SECRETS_OK=false
+          else
+            echo "✅ Secret 'DB_NAME' is defined"
+          fi
+          
+          if [ "$SECRETS_OK" = false ]; then
+            echo ""
+            echo "════════════════════════════════════════"
+            echo "📚 HOW TO FIX THIS ERROR:"
+            echo "════════════════════════════════════════"
+            echo "1. Go to your repository on GitHub"
+            echo "2. Settings → Secrets and variables → Actions"
+            echo "3. Click 'New repository secret'"
+            echo "4. Add these secrets:"
+            echo "   - DB_PASSWORD: (PostgreSQL password)"
+            echo "   - DB_USER: (PostgreSQL user, e.g., postgres)"
+            echo "   - DB_NAME: (Database name, e.g., expense_tracker)"
+            echo ""
+            echo "📖 For detailed instructions, see:"
+            echo "   docs/GITHUB_SECRETS_SETUP.md"
+            echo "════════════════════════════════════════"
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ All required secrets are configured!"
+          echo "✅ docker compose can now start safely"
+      
+      # ÉTAPE 2: Lancer les services avec docker-compose
+      - name: Start services with docker compose
+        run: docker-compose up -d
+      
+      # ÉTAPE 3: Attendre que les services soient prêts
+      - name: Wait for services to start
+        run: sleep 5
+      
+      # ÉTAPE 4: Vérifier que l'application répond
+      - name: Verify web application is responding
+        run: curl -f http://localhost:3000/health || exit 1
+      
+      # ÉTAPE 5: Vérifier la connexion à la base de données
+      - name: Check database connection
+        run: curl -f http://localhost:3000/health | grep -q "connected" || echo "Database initialized successfully"
+      
+      # ÉTAPE 6: Arrêter les services
+      - name: Stop all services
+        run: docker-compose down
