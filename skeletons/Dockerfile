@@ -1,3 +1,5 @@
+#Dockerfile personnaliée par Ulrick Wadson BENOIT
+
 # Dockerfile Skeleton — Expense Tracker (Node.js)
 # Niveau débutant: Modules 5-7 (Docker concepts, Docker practice, Docker Compose)
 # Votre tâche: Compléter ce fichier Dockerfile pour conteneuriser l'application
