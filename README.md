@@ -134,7 +134,7 @@ npm test
 
 ## 👤 Auteur
 
-Créé pour le cours DevOps - Session 2025-2026
+Créé par Ulrick Wadson BENOIT pour le cours DevOps - Session 2025-2026
 
 ---
 

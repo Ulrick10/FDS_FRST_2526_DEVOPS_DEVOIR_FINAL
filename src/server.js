@@ -1,3 +1,5 @@
+//Application développée par Ulrick Wadson BENOIT
+
 /**
  * Server Entry Point
  * Express.js application for Expense Tracker
