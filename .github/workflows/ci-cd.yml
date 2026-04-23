@@ -159,7 +159,7 @@ jobs:
       
       # ÉTAPE 2: Lancer les services avec docker-compose
       - name: Start services with docker compose
-        run: docker-compose up -d
+        run: docker compose up -d
       
       # ÉTAPE 3: Attendre que les services soient prêts
       - name: Wait for services to start
@@ -175,4 +175,4 @@ jobs:
       
       # ÉTAPE 6: Arrêter les services
       - name: Stop all services
-        run: docker-compose down
+        run: docker compose down
